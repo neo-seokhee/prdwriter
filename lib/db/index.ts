@@ -4,7 +4,7 @@ import { createTables } from './schema';
 let isInitialized = false;
 
 // Create a pool connection with explicit configuration
-const pool = createPool({
+export const pool = createPool({
   connectionString: process.env.POSTGRES_URL,
 });
 

@@ -119,7 +119,9 @@ export const updateProduct = async (productId: number, input: Partial<CreateProd
   const query = `UPDATE products SET ${updates.join(', ')} WHERE id = $${values.length + 1}`;
   values.push(productId);
 
-  await sql.query(query, values);
+  // Use pool.query for dynamic queries
+  const { pool } = await import('./index');
+  await pool.query(query, values);
 };
 
 export const deleteProduct = async (productId: number): Promise<void> => {
