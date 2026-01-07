@@ -1,7 +1,14 @@
-import { sql } from '@vercel/postgres';
+import { createPool, sql as vercelSql } from '@vercel/postgres';
 import { createTables } from './schema';
 
 let isInitialized = false;
+
+// Create a pool connection with explicit configuration
+const pool = createPool({
+  connectionString: process.env.POSTGRES_URL,
+});
+
+export const sql = pool.sql;
 
 export const initializeDatabase = async (): Promise<void> => {
   if (!isInitialized) {
@@ -9,9 +16,6 @@ export const initializeDatabase = async (): Promise<void> => {
     isInitialized = true;
   }
 };
-
-// Export sql client for use in API routes
-export { sql };
 
 // Default export for backward compatibility
 export default sql;
