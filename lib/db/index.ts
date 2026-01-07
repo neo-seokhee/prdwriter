@@ -1,14 +1,20 @@
-import { createPool, sql as vercelSql } from '@vercel/postgres';
+import { Pool } from 'pg';
 import { createTables } from './schema';
 
+let pool: Pool | null = null;
 let isInitialized = false;
 
-// Create a pool connection with explicit configuration
-export const pool = createPool({
-  connectionString: process.env.POSTGRES_URL,
-});
-
-export const sql = pool.sql;
+export const getPool = (): Pool => {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.POSTGRES_URL,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    });
+  }
+  return pool;
+};
 
 export const initializeDatabase = async (): Promise<void> => {
   if (!isInitialized) {
@@ -17,5 +23,21 @@ export const initializeDatabase = async (): Promise<void> => {
   }
 };
 
-// Default export for backward compatibility
+// Helper function to execute queries with tagged template
+export const sql = async (strings: TemplateStringsArray, ...values: any[]) => {
+  const pool = getPool();
+  
+  // Convert template string to parameterized query
+  let query = strings[0];
+  const params: any[] = [];
+  
+  for (let i = 0; i < values.length; i++) {
+    params.push(values[i]);
+    query += `$${i + 1}` + strings[i + 1];
+  }
+  
+  const result = await pool.query(query, params);
+  return { rows: result.rows, rowCount: result.rowCount };
+};
+
 export default sql;

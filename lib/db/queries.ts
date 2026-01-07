@@ -120,7 +120,8 @@ export const updateProduct = async (productId: number, input: Partial<CreateProd
   values.push(productId);
 
   // Use pool.query for dynamic queries
-  const { pool } = await import('./index');
+  const { getPool } = await import('./index');
+  const pool = getPool();
   await pool.query(query, values);
 };
 
