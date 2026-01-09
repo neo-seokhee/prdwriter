@@ -425,50 +425,73 @@ export default function ProductDetailPage() {
           {/* Validation Markers */}
           {selectedVersion && selectedVersion.validation_markers.length > 0 && (
             <Card padding="sm">
-              <h3 className="font-semibold text-gray-900 mb-3">검증 필요</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">💡 검증 필요 항목</h3>
               <p className="text-sm text-gray-600 mb-4">
-                다음 기능 또는 가정은 사용자 리서치를 통한 검증이 필요합니다:
+                더 정확한 PRD를 위해 추가 확인이 필요한 부분이에요
               </p>
               <div className="space-y-3">
-                {selectedVersion.validation_markers.map((marker) => (
-                  <div 
-                    key={marker.id} 
-                    className={`p-3 rounded-lg border-l-4 ${
-                      marker.marker_type === 'user_need_verification' 
-                        ? 'bg-red-50 border-red-400'
-                        : marker.marker_type === 'additional_research_needed'
-                        ? 'bg-blue-50 border-blue-400'
-                        : 'bg-yellow-50 border-yellow-400'
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="text-lg">
-                        {marker.marker_type === 'user_need_verification' ? '?' : 
-                         marker.marker_type === 'additional_research_needed' ? '🔍' : '⚠️'}
-                      </span>
-                      <div className="flex-1">
-                        <div className="font-semibold text-sm text-gray-900 mb-1">
-                          {marker.marker_type === 'user_need_verification' ? '문제-해결책 적합성' :
-                           marker.marker_type === 'additional_research_needed' ? '리서치 갭' : 
-                           '사용자 니즈 검증'}
-                        </div>
-                        <div className="text-sm font-medium text-gray-800 mb-1">
-                          {marker.feature_name}
-                        </div>
-                        {marker.description && (
-                          <div className="text-xs text-gray-600">
-                            {marker.description}
+                {selectedVersion.validation_markers.map((marker) => {
+                  const getMarkerInfo = () => {
+                    switch (marker.marker_type) {
+                      case 'user_need_verification':
+                        return {
+                          title: '이 문제가 실제로 있는지 확인이 필요해요',
+                          emoji: '❓',
+                          bgColor: 'bg-amber-50',
+                          borderColor: 'border-amber-400'
+                        };
+                      case 'additional_research_needed':
+                        return {
+                          title: '추가로 조사해야 할 내용이 있어요',
+                          emoji: '🔍',
+                          bgColor: 'bg-blue-50',
+                          borderColor: 'border-blue-400'
+                        };
+                      default: // unclear_problem_solution
+                        return {
+                          title: '사용자 니즈를 더 명확히 파악해야 해요',
+                          emoji: '💭',
+                          bgColor: 'bg-purple-50',
+                          borderColor: 'border-purple-400'
+                        };
+                    }
+                  };
+                  
+                  const markerInfo = getMarkerInfo();
+                  
+                  return (
+                    <div 
+                      key={marker.id} 
+                      className={`p-3 rounded-lg border-l-4 ${markerInfo.bgColor} ${markerInfo.borderColor}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-lg">{markerInfo.emoji}</span>
+                        <div className="flex-1">
+                          <div className="font-semibold text-sm text-gray-900 mb-1">
+                            {markerInfo.title}
                           </div>
-                        )}
-                        {marker.section_context && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            위치: {marker.section_context}
+                          <div className="text-sm font-medium text-gray-800 mb-2">
+                            "{marker.feature_name}"
                           </div>
-                        )}
+                          {marker.description && (
+                            <div className="text-sm text-gray-700 mb-2 bg-white/50 p-2 rounded">
+                              💬 {marker.description}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-600 flex items-center gap-1">
+                            <span>📍</span>
+                            <span>이 기능을 검증하려면 사용자 인터뷰나 설문조사를 진행해보세요</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  💡 <strong>Tip:</strong> 리서치를 추가하면 이런 불확실성을 줄일 수 있어요!
+                </p>
               </div>
             </Card>
           )}
