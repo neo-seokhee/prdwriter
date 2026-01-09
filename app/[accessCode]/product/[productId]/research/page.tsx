@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Container } from '@/components/layout/Container';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ResearchForm } from '@/components/forms/ResearchForm';
 import { useAccessCode } from '@/hooks/useAccessCode';
@@ -101,10 +102,15 @@ export default function ResearchPage() {
                 ) : (
                   <>
                     <h3 className="font-semibold text-green-900 mb-2">✅ 준비 완료</h3>
-                    <p className="text-sm text-green-800">
+                    <p className="text-sm text-green-800 mb-3">
                       {research.length}개의 리서치가 준비되었습니다! 
                       추가 리서치를 입력하여 더 풍부한 PRD를 생성할 수 있습니다.
                     </p>
+                    <Link href={`/${accessCode}/product/${productId}/prd`}>
+                      <Button variant="primary" size="sm" className="w-full">
+                        🚀 PRD 생성하러 가기
+                      </Button>
+                    </Link>
                   </>
                 )}
               </div>
