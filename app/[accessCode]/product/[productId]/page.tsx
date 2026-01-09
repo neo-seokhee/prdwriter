@@ -26,6 +26,29 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
+  const fetchLatestPRD = async () => {
+    try {
+      const prdRes = await fetch(`/api/products/${productId}/prd/latest`);
+      if (prdRes.ok) {
+        const prdData = await prdRes.json();
+        setLatestPRD(prdData);
+        setSelectedVersion(prdData);
+
+        // Fetch PRD versions
+        const versionsRes = await fetch(`/api/products/${productId}/prd/versions`);
+        if (versionsRes.ok) {
+          const versionsData = await versionsRes.json();
+          setPRDVersions(versionsData.versions);
+        }
+        return true;
+      }
+      return false;
+    } catch (err) {
+      return false;
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,19 +66,7 @@ export default function ProductDetailPage() {
         setProduct(productData);
 
         // Fetch latest PRD
-        const prdRes = await fetch(`/api/products/${productId}/prd/latest`);
-        if (prdRes.ok) {
-          const prdData = await prdRes.json();
-          setLatestPRD(prdData);
-          setSelectedVersion(prdData);
-
-          // Fetch PRD versions
-          const versionsRes = await fetch(`/api/products/${productId}/prd/versions`);
-          if (versionsRes.ok) {
-            const versionsData = await versionsRes.json();
-            setPRDVersions(versionsData.versions);
-          }
-        }
+        await fetchLatestPRD();
 
         // Fetch research
         const researchRes = await fetch(`/api/products/${productId}/research`);
@@ -71,32 +82,74 @@ export default function ProductDetailPage() {
     };
 
     fetchData();
+
+    // 컴포넌트 언마운트 시 폴링 정리
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
   }, [productId]);
 
   const handleGeneratePRD = async () => {
     setIsGenerating(true);
     setError('');
 
-    try {
-      const response = await fetch('/api/prd/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: parseInt(productId, 10) }),
+    // PRD 생성 요청 (백그라운드에서 처리)
+    fetch('/api/prd/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: parseInt(productId, 10) }),
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (response.ok) {
+          // PRD 생성 완료 - 즉시 불러오기
+          await fetchLatestPRD();
+          setIsGenerating(false);
+          // 폴링 정리
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+          }
+        } else {
+          console.error('PRD 생성 실패:', data);
+          let errorMessage = data.error || 'PRD 생성에 실패했습니다';
+          if (data.details) {
+            errorMessage += ` (${data.details})`;
+          }
+          setError(errorMessage);
+          setIsGenerating(false);
+        }
+      })
+      .catch((err) => {
+        setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+        setIsGenerating(false);
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Reload page to show new PRD
-        window.location.reload();
-      } else {
-        setError(data.error || 'PRD 생성에 실패했습니다');
+    // 5초마다 PRD 생성 완료 여부 확인 (최대 3분)
+    let checkCount = 0;
+    const maxChecks = 36; // 3분 (5초 * 36)
+    
+    const interval = setInterval(async () => {
+      checkCount++;
+      const hasPRD = await fetchLatestPRD();
+      
+      if (hasPRD) {
+        // PRD 생성 완료
+        setIsGenerating(false);
+        clearInterval(interval);
+        setPollingInterval(null);
+      } else if (checkCount >= maxChecks) {
+        // 타임아웃
+        setIsGenerating(false);
+        setError('PRD 생성 시간이 초과되었습니다. 페이지를 새로고침하여 확인해주세요.');
+        clearInterval(interval);
+        setPollingInterval(null);
       }
-    } catch (err) {
-      setError('네트워크 오류가 발생했습니다');
-    } finally {
-      setIsGenerating(false);
-    }
+    }, 5000);
+    
+    setPollingInterval(interval);
   };
 
   const handleSelectVersion = async (versionId: number) => {
@@ -240,29 +293,45 @@ export default function ProductDetailPage() {
                 </>
               ) : (
                 <>
-                  <p className="text-gray-600 mb-2">
-                    ✅ 유저 리서치 {researchList.length}개가 준비되었습니다
-                  </p>
-                  <p className="text-sm text-gray-500 mb-6">
-                    이제 PRD를 생성할 수 있습니다
-                  </p>
-                  <div className="flex gap-3 justify-center">
-                    <Link href={`/${accessCode}/product/${productId}/research`}>
-                      <Button variant="outline">
-                        📝 리서치 더 추가하기
-                      </Button>
-                    </Link>
-                    <Button onClick={handleGeneratePRD} disabled={isGenerating}>
-                      {isGenerating ? (
-                        <div className="flex items-center gap-2">
-                          <LoadingSpinner size="sm" />
-                          PRD 생성 중...
-                        </div>
-                      ) : (
-                        '📄 PRD 생성하기'
-                      )}
-                    </Button>
-                  </div>
+                  {!isGenerating ? (
+                    <>
+                      <p className="text-gray-600 mb-2">
+                        ✅ 유저 리서치 {researchList.length}개가 준비되었습니다
+                      </p>
+                      <p className="text-sm text-gray-500 mb-6">
+                        이제 PRD를 생성할 수 있습니다
+                      </p>
+                      <div className="flex gap-3 justify-center">
+                        <Link href={`/${accessCode}/product/${productId}/research`}>
+                          <Button variant="outline">
+                            📝 리서치 더 추가하기
+                          </Button>
+                        </Link>
+                        <Button onClick={handleGeneratePRD} disabled={isGenerating}>
+                          📄 PRD 생성하기
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <LoadingSpinner size="md" />
+                        <span className="text-lg font-semibold text-gray-900">PRD 생성 중</span>
+                      </div>
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left max-w-md mx-auto">
+                        <h3 className="font-semibold text-blue-900 mb-2">⏳ 백그라운드에서 생성 중</h3>
+                        <p className="text-sm text-blue-800 mb-2">
+                          Claude가 제품 정보와 리서치를 분석하여 종합적인 PRD를 작성하고 있습니다.
+                        </p>
+                        <p className="text-sm text-blue-800 mb-2">
+                          <strong>예상 소요 시간:</strong> 약 30-60초
+                        </p>
+                        <p className="text-sm text-blue-700">
+                          💡 이 페이지에 머물러 주세요. PRD 생성이 완료되면 자동으로 업데이트됩니다.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
               {error && (

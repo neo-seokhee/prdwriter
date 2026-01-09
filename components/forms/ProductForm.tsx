@@ -129,7 +129,10 @@ export function ProductForm() {
 
           <Textarea
             label="핵심 기능"
-            placeholder="- 매일 오전 7시 자동으로 글로벌 주요 경제 뉴스 크롤링&#10;- AI를 활용한 뉴스 요약 및 카테고리 분류&#10;- 웹 대시보드로 뉴스 제공&#10;- 이메일 뉴스레터 발송"
+            placeholder={`- 매일 오전 7시 자동으로 글로벌 주요 경제 뉴스 크롤링
+- AI를 활용한 뉴스 요약 및 카테고리 분류
+- 웹 대시보드로 뉴스 제공
+- 이메일 뉴스레터 발송`}
             value={formData.core_features}
             onChange={(e) => {
               setFormData({ ...formData, core_features: e.target.value });

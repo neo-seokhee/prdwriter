@@ -106,9 +106,9 @@ export default function ResearchPage() {
                       {research.length}개의 리서치가 준비되었습니다! 
                       추가 리서치를 입력하여 더 풍부한 PRD를 생성할 수 있습니다.
                     </p>
-                    <Link href={`/${accessCode}/product/${productId}/prd`}>
+                    <Link href={`/${accessCode}/product/${productId}`}>
                       <Button variant="primary" size="sm" className="w-full">
-                        🚀 PRD 생성하러 가기
+                        🚀 제품 카드로 돌아가기
                       </Button>
                     </Link>
                   </>
