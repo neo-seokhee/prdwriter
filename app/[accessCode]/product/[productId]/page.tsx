@@ -457,7 +457,37 @@ export default function ProductDetailPage() {
                     }
                   };
                   
+                  // description을 사용자 친화적으로 변환
+                  const formatDescription = (desc: string | null) => {
+                    if (!desc) return null;
+                    
+                    let formatted = desc
+                      // "~가 필요합니다" → "~를 확인해보세요"
+                      .replace(/필요합니다?\.?/g, '확인해보세요!')
+                      .replace(/검증 필요\.?/g, '확인해보세요!')
+                      // "~해야 합니다" → "~해보세요"
+                      .replace(/해야 합니다?\.?/g, '해보세요!')
+                      // "~가 불명확함" → "~를 더 명확히 해볼 필요가 있어요"
+                      .replace(/불명확함\.?/g, '더 명확히 해볼 필요가 있어요')
+                      // "~가정에 기반함" → "~아직 가정에 기반하고 있어요"
+                      .replace(/가정에 기반함\.?/g, '아직 가정에 기반하고 있어요')
+                      // "제공되지 않아" → "아직 충분하지 않아서"
+                      .replace(/제공되지 않아/g, '아직 충분하지 않아서')
+                      // "~해야함" → "~해보세요"
+                      .replace(/해야함\.?/g, '해보세요!')
+                      // 마침표 추가 처리
+                      .replace(/\.$/, '');
+                    
+                    // 문장이 ~요/~세요로 끝나지 않으면 ~요 추가
+                    if (!formatted.match(/[요세다](!|\.)?$/)) {
+                      formatted += '요!';
+                    }
+                    
+                    return formatted;
+                  };
+                  
                   const markerInfo = getMarkerInfo();
+                  const friendlyDescription = formatDescription(marker.description);
                   
                   return (
                     <div 
@@ -473,15 +503,11 @@ export default function ProductDetailPage() {
                           <div className="text-sm font-medium text-gray-800 mb-2">
                             "{marker.feature_name}"
                           </div>
-                          {marker.description && (
-                            <div className="text-sm text-gray-700 mb-2 bg-white/50 p-2 rounded">
-                              💬 {marker.description}
+                          {friendlyDescription && (
+                            <div className="text-sm text-gray-700 bg-white/50 p-2 rounded">
+                              💬 {friendlyDescription}
                             </div>
                           )}
-                          <div className="text-xs text-gray-600 flex items-center gap-1">
-                            <span>📍</span>
-                            <span>이 기능을 검증하려면 사용자 인터뷰나 설문조사를 진행해보세요</span>
-                          </div>
                         </div>
                       </div>
                     </div>
